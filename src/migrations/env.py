@@ -8,6 +8,7 @@ from alembic import context
 from src.config import settings
 from src.database import Base
 from src.models.hotels import HotelsOrm
+from src.models.rooms import RoomsOrm
 
 import sys
 from pathlib import Path
