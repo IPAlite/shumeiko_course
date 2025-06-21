@@ -23,15 +23,16 @@ async def get_hotels(
     async with async_session_maker() as session:
         query = select(HotelsOrm)
         if title:
-            query = query.where(func.lower(HotelsOrm.title).like(f'%{title.lower()}%'))
+            query = query.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
         if location:
-            query = query.where(func.lower(HotelsOrm.location).like(f'%{location.lower()}%'))
+            query = query.filter(func.lower(HotelsOrm.location).like(f"%{location.strip().lower()}%"))
         query = (
             query
             .limit(per_page)
             .offset((pagination.page - 1) * per_page)
         )
-        result = await session.execute(query)
+        print(query.compile(compile_kwargs={"literal_binds":True}))
+        result = await session.execute(query) 
         hotels = result.scalars().all()
 
         return hotels
