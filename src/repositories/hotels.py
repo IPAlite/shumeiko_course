@@ -25,9 +25,3 @@ class HotelsRepository(BaseRepository):
         
         return result.scalars().all()
     
-    
-    async def add(self, title, location):
-        add_obj_stmt = insert(self.model).values(title=title, location=location).returning(self.model)
-        result = await self.session.execute(add_obj_stmt)
-        new_id = result.scalar()
-        return new_id

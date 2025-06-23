@@ -1,4 +1,5 @@
 from sqlalchemy import select, insert
+from pydantic import BaseModel
 
 class BaseRepository:
     model = None
@@ -18,7 +19,8 @@ class BaseRepository:
 
         return result.scalars().one_or_none()
     
-    async def  add(self, **kwargs):
-        add_obj_stmt = insert(self.model).values(**kwargs.model_dump)
+    async def add(self, data: BaseModel):
+        add_obj_stmt = insert(self.model).values(data.model_dump()).returning(self.model)
+        result = await self.session.execute(add_obj_stmt)
+        return result.scalars().one()
         
-        return add_obj_stmt
