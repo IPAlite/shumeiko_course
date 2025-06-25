@@ -2,7 +2,7 @@ from fastapi import Query, Body, APIRouter
 
 from schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
-from src.database import async_session_maker, engine
+from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepository
 
 
@@ -26,7 +26,10 @@ async def get_hotels(
             offset=((pagination.page - 1) * per_page)
         )
 
-
+@router.get('/{hotel_id}', summary='Получение отеля по id')
+async def get_hotel_by_id(hotel_id: int):
+    async with async_session_maker() as session:
+        return await HotelsRepository(session).get_one(id=hotel_id)
  
 @router.post('', summary='Добавление нового отеля')
 async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
