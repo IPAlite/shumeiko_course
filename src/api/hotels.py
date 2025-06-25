@@ -5,7 +5,6 @@ from sqlalchemy import insert, select, func
 from schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 from src.database import async_session_maker, engine
-from src.models.hotels import HotelsOrm
 from src.repositories.hotels import HotelsRepository
 
 
@@ -50,12 +49,10 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
 
 
 @router.put('/{hotel_id}', summary='Полное обновлление информации об отеле')
-def change_hotel(hotel_id: int, hotel_data: Hotel):
-    global hotels
-
-    hotel = [hotel for hotel in hotels if hotel['id'] == hotel_id][0]
-    hotel['title'] = hotel_data.title
-    hotel['name'] = hotel_data.name
+async def change_hotel(hotel_id: int, hotel_data: Hotel):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit(hotel_id, hotel_data)
+        await session.commit()
     return {'status': 'ok'}
 
         
@@ -74,7 +71,8 @@ def rewrite_hotel(
 
 
 @router.delete('/{hotel_id}', summary='Удаление отеля')
-def delete_hotel(hotel_id: int):
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel['id'] != hotel_id ]
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).delete(hotel_id)
+        await session.commit()
     return {'status': 'ok'}
