@@ -1,7 +1,5 @@
 from fastapi import Query, Body, APIRouter
 
-from sqlalchemy import insert, select, func
-
 from schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 from src.database import async_session_maker, engine
@@ -58,15 +56,15 @@ async def change_hotel(hotel_id: int, hotel_data: Hotel):
         
 
 @router.patch('/{hotel_id}', summary='Частичное обновление данных об отеле', description='Что-то более подробное')
-def rewrite_hotel(
+async def partially_edit_hotel(
     hotel_id: int,
     hotel_data: HotelPatch
 ):
     global hotels
 
-    hotel = [hotel for hotel in hotels if hotel['id'] == hotel_id][0]
-    hotel['title'] = hotel_data.title if hotel_data.title is not None else hotel['title']
-    hotel['name'] = hotel_data.name if hotel_data.name is not None else hotel['name']
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit(hotel_data, exclude_unset = True, id=hotel_id)
+        await session.commit()
     return {'status': 'ok'}
 
 
