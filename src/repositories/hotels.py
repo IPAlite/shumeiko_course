@@ -7,6 +7,7 @@ from src.schemas.hotels import Hotel
 class HotelsRepository(BaseRepository):
     model = HotelsOrm
     schema = Hotel
+    schema = Hotel
 
     async def get_all(self, location, title, limit, offset) -> list[Hotel]:
         query = select(HotelsOrm)
