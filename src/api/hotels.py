@@ -33,7 +33,6 @@ async def get_hotel_by_id(hotel_id: int):
 
 @router.post('', summary='Добавление нового отеля')
 async def create_hotel(hotel_data: HotelAdd = Body(openapi_examples={
-async def create_hotel(hotel_data: HotelAdd = Body(openapi_examples={
     "1": {"summary": "Сочи", "value": {
         "title": "Отель Сочи 19 звезд",
         "location": "Сочи, ул пездова 19"
@@ -50,7 +49,6 @@ async def create_hotel(hotel_data: HotelAdd = Body(openapi_examples={
 
 
 @router.put('/{hotel_id}', summary='Полное обновлление информации об отеле')
-async def change_hotel(hotel_id: int, hotel_data: HotelAdd):
 async def change_hotel(hotel_id: int, hotel_data: HotelAdd):
     async with async_session_maker() as session:
         await HotelsRepository(session).edit(data=hotel_data, id=hotel_id, exclude_unset=False)
