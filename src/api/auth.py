@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Response, Request, Body
+from fastapi import APIRouter, HTTPException, Response,  Body
 
 from src.config import settings
 from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
 from src.repositories.users import UserRepository
 from src.database import async_session_maker
 from src.services.auth import AuthService
+from src.api.dependencies import UserIdDep, get_token
 
 router = APIRouter(prefix="/auth", tags=['Авторизация и аутентификация'])
 
@@ -42,9 +43,14 @@ async def user_login(data: UserLogin, response: Response):
         return {"access_token": access_token}
     
 
-@router.get('/only_auth', summary='Кому печеньку?')
-async def only_auth(request: Request):
-    access_token = request.cookies.get('access_token') or None
+@router.get('/me', summary='Проверка авторизованного пользователя')
+async def get_me(user_id: UserIdDep):
+    async with async_session_maker() as session:
+        user = await UserRepository(session).get_one_or_none(id=user_id)
+        return user
 
-    return {"access_token": access_token}
-    
+
+@router.delete('/logout', summary='Выход из системы')
+async def user_logout(response: Response):
+    response.delete_cookie(key = 'access_token')
+    return {'status': "ok"}
