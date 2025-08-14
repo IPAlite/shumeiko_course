@@ -9,6 +9,12 @@ from src.api.dependencies import UserIdDep, DBDep
 router = APIRouter(prefix="/auth", tags=['Авторизация и аутентификация'])
 
 
+@router.get('/me', summary='Проверка авторизованного пользователя')
+async def get_me(user_id: UserIdDep, db: DBDep):
+    user = await db.users.get_one_or_none(id=user_id)
+    return user
+
+
 @router.post('/register', summary='Регистрация пользователя')
 async def user_registet(db: DBDep, data: UserRequestAdd = Body(openapi_examples={
     "1": {"summary": "Потап", "value": {
@@ -38,12 +44,6 @@ async def user_login(data: UserLogin, response: Response, db: DBDep):
     access_token = AuthService().create_access_token({"user_id": user.id})
     response.set_cookie("access_token", access_token)
     return {"access_token": access_token}
-    
-
-@router.get('/me', summary='Проверка авторизованного пользователя')
-async def get_me(user_id: UserIdDep, db: DBDep):
-    user = await db.users.get_one_or_none(id=user_id)
-    return user
 
 
 @router.post('/logout', summary='Выход из системы')
