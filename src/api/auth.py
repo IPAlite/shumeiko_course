@@ -17,7 +17,7 @@ async def user_registet(db: DBDep, data: UserRequestAdd = Body(openapi_examples=
         "nikname": "AlonMneVlom",
         "phone": "8800553535",
         "email": "potapvlad@gmail.com",
-        "password": "трынь бам"
+        "password": "111"
     }}
 })):
     hashed_password = AuthService().hashed_password(password=data.password)
