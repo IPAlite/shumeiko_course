@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Body
+from datetime import date
+
+from fastapi import APIRouter, HTTPException, Body, Query
 
 from src.schemas.rooms import RoomAddRequest, RoomAdd, RoomPatchRequest, RoomPatch
 from src.database import async_session_maker
@@ -8,8 +10,12 @@ router = APIRouter(prefix='/hotels', tags=['Номера'])
 
 
 @router.get("/{hotel_id}/rooms", summary='Получение всех номеров отеля')
-async def get_all_rooms(hotel_id: int, db: DBDep):
-    return await db.rooms.get_filtered(hotel_id=hotel_id)
+async def get_all_rooms(hotel_id: int,
+                     db: DBDep,
+                     date_from: date = Query(example="2025-08-01"),
+                     date_to: date = Query(example="2025-08-10")
+                    ):
+    return await db.rooms.get_filtered_by_time(hotel_id=hotel_id, date_from=date_from, date_to=date_to)
 
 
 @router.get("/{hotel_id}/rooms/{room_id}", summary='Получение конретного номера')
