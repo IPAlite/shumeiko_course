@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Body, Query
 
 from src.schemas.rooms import RoomAddRequest, RoomAdd, RoomPatchRequest, RoomPatch
+from src.schemas.facilities import RoomFacilityAdd
 from src.database import async_session_maker
 from src.api.dependencies import DBDep
 
@@ -27,26 +28,18 @@ async def get_definite_room(hotel_id:int, room_id: int, db: DBDep):
 
 
 @router.post("/{hotel_id}/rooms", summary='Добавление номеров')
-async def add_new_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Body(openapi_examples={
-    "1": {"summary": "Базовый", "value": {
-        "title": "Базовый номер",
-        "description": "Есть все, что нужно, для комфортного времяпрепровождения",
-        "price": 7500,
-        "quantity": 12
-    }},
-    "2": {"summary": "Люкас", "value": {
-        "title": "Дубайский люкс",
-        "description": "Номер, в котором вы будете чувствовать себя королем",
-        "price": 24500,
-        "quantity": 3
-    }}
-})):
+async def add_new_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Body()):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
+    room = await db.rooms.add(_room_data)
+
     hotel = await db.hotels.get_one_or_none(id = hotel_id)
     if hotel is None:
         raise HTTPException(status_code=404, detail='Отель отсуствует в базе')
-    room = await db.rooms.add(_room_data)
+    
+    rooms_facilities_data = [RoomFacilityAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids]
+    await db.rooms_facilities.add_bulk(rooms_facilities_data)
     await db.commit()
+
     return {'status': 'ok', 'data': room}
 
 

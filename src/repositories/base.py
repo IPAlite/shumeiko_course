@@ -36,6 +36,13 @@ class BaseRepository:
         result = await self.session.execute(add_obj_stmt)
         return result.scalars().one()
     
+
+    async def add_bulk(self, data: list[BaseModel]):
+        add_obj_stmt = insert(self.model).values([item.model_dump() for item in data]).returning(self.model)
+        await self.session.execute(add_obj_stmt)
+        
+    
+
     async def edit(self, data: BaseModel, exclude_unset: bool = False,  **filter_by) -> None:
         checker = await self.session.execute(select(self.model).filter_by(**filter_by))
         rows = checker.scalars().all()
@@ -50,6 +57,7 @@ class BaseRepository:
             )
         await self.session.execute(edit_stmt)
     
+
     async def delete(self, **filter_by) -> None:
         checker = await self.session.execute(select(self.model).filter_by(**filter_by))
         rows = checker.scalars().all()
