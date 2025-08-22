@@ -21,15 +21,17 @@ class HotelsRepository(BaseRepository):
             offset: int,
             location: str| None = None,
             title: str | None = None
-    ):
+    ) -> list[Hotel]:
+        
         rooms_ids_to_get = rooms_ids_for_booking(date_from=date_from, date_to=date_to)
+
         hotels_ids_to_get = (
             select(RoomsOrm.hotel_id)
             .select_from(RoomsOrm)
             .filter(RoomsOrm.id.in_(rooms_ids_to_get))
         )
-        query = select(HotelsOrm).where(HotelsOrm.id.in_(select(hotels_ids_to_get.c.hotel_id)))
 
+        query = select(HotelsOrm).filter(HotelsOrm.id.in_(hotels_ids_to_get))
         if location:
             query = query.filter(HotelsOrm.location.ilike(f"%{location}%"))
         if title:
@@ -38,5 +40,5 @@ class HotelsRepository(BaseRepository):
         query = query.order_by(HotelsOrm.id.asc()).limit(limit).offset(offset)
 
         result = await self.session.execute(query)
-        hotels = result.scalars().all()
-        return [self.schema.model_validate(h, from_attributes=True) for h in hotels]
+
+        return [self.schema.model_validate(hotel, from_attributes=True) for hotel in result.scalars().all()]
