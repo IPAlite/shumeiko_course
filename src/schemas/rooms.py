@@ -28,6 +28,8 @@ class RoomPatchRequest(BaseModel):
     description: str | None = None
     price: int | None = None
     quantity: int | None = None
+    add_facilities: list[int] | None = None
+    remove_facilities: list[int] | None = None
 
 
 class RoomPatch(BaseModel):

@@ -12,3 +12,7 @@ class FacilitiesRepository(BaseRepository):
 class RoomsFacilitiesRepository(BaseRepository):
     model = RoomsFacilitiesOrm
     schema = RoomFacility
+
+
+    # async def edit(self, *data, exclude_unset = False):
+        

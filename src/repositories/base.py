@@ -38,6 +38,8 @@ class BaseRepository:
     
 
     async def add_bulk(self, data: list[BaseModel]):
+        if not data:
+            return []
         add_obj_stmt = insert(self.model).values([item.model_dump() for item in data]).returning(self.model)
         await self.session.execute(add_obj_stmt)
         
@@ -66,4 +68,8 @@ class BaseRepository:
         if len(rows) > 1:
             raise HTTPException(status_code=400, detail="More than one object found")
         delete_stmt = delete(self.model).filter_by(**filter_by)
+        await self.session.execute(delete_stmt)
+
+    async def delete_bulk(self, data: list[int], **filter_by) -> None:
+        delete_stmt = delete(self.model).filter(self.model.facility_id.in_(data)).filter_by(**filter_by)
         await self.session.execute(delete_stmt)
