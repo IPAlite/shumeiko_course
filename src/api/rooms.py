@@ -47,50 +47,21 @@ async def add_new_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Bod
 async def room_rewrite(hotel_id:int, room_id:int, room_data: RoomAddRequest, db: DBDep):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(id=room_id, data=_room_data)
-
-    if room_data.facilities_ids is None:
-        facilities_ids = []
-    else:
-        facilities_ids = room_data.facilities_ids
-
-    if facilities_ids and facilities_ids[0] == 0:
-        raise HTTPException(status_code=404, detail='Измените перечень удобств для текущего номера')
-    
-    _exsiting_facilities = await db.rooms_facilities.get_filtered(room_id=room_id)
-    exsiting_facilities_ids = set([uid.facility_id for uid in _exsiting_facilities])
-
-    add_facilities_ids = set(facilities_ids)
-
-    ids_for_remove = exsiting_facilities_ids - add_facilities_ids
-    ids_to_add = add_facilities_ids - exsiting_facilities_ids
-
-    if facilities_ids:
-        await db.rooms_facilities.delete_bulk(ids_for_remove, room_id=room_id)
-    add_ids = [RoomFacilityPatch(room_id=room_id, facility_id=f_id) for f_id in ids_to_add]
-    await db.rooms_facilities.add_bulk(add_ids)
+    await db.rooms_facilities.set_room_facilities(room_id=room_id, facilities_ids=room_data.facilities_ids)
     await db.commit()
-
     return {'status': 'ok'}
 
 
 @router.patch('{hotel_id}/rooms/{room_id}', summary='Частичное обновление информации о номере')
 async def room_change(hotel_id:int, room_id:int, room_data: RoomPatchRequest, db: DBDep):
-    _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset=True, exclude={'add_facilities', 'remove_facilities'}))
+    _room_data_dict = room_data.model_dump(exclude_unset=True)
+    _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
     await db.rooms.edit(id=room_id, hotel_id=hotel_id, data=_room_data, exclude_unset=True)
-    
-    room_data.add_facilities = [] if room_data.add_facilities and room_data.add_facilities[0] == 0 else room_data.add_facilities
-    room_data.remove_facilities = [] if room_data.remove_facilities and room_data.remove_facilities[0] == 0 else room_data.remove_facilities
 
-    _exsiting_facilities = await db.rooms_facilities.get_filtered(room_id=room_id)
-    exsiting_facilities_ids = set([uid.facility_id for uid in _exsiting_facilities])
-    
-    ids_to_add = set(room_data.add_facilities) - exsiting_facilities_ids
+    if "facilities_ids" in _room_data_dict:
+        await db.rooms_facilities.set_room_facilities(room_id=room_id, facilities_ids=_room_data_dict['facilities_ids'])
 
-    await db.rooms_facilities.delete_bulk(room_data.remove_facilities, room_id=room_id)
-    add_ids = [RoomFacilityAdd(room_id=room_id, facility_id=f_id) for f_id in ids_to_add]
-    await db.rooms_facilities.add_bulk(add_ids)
     await db.commit()
-
     return {'status': 'ok'}
 
 
