@@ -19,8 +19,8 @@ app = FastAPI()
 app.include_router(router_auth)
 app.include_router(router_hotels)
 app.include_router(router_rooms)
-app.include_router(router_bookings)
 app.include_router(router_facilities)
+app.include_router(router_bookings)
 
 
 if __name__ == '__main__':
