@@ -4,6 +4,7 @@ from sqlalchemy import select, insert
 
 from pydantic import BaseModel
 
+from repositories.mappers.mappers import UserDataMapper
 from src.repositories.base import BaseRepository
 from src.models.users import UserOrm
 from src.schemas.users import User
@@ -11,7 +12,7 @@ from src.schemas.users import User
 
 class UserRepository(BaseRepository):
     model = UserOrm
-    schema = User
+    mapper = UserDataMapper
 
     async def add(self, data: BaseModel):
         query = select(self.model).where(self.model.email == data.email)
@@ -24,4 +25,4 @@ class UserRepository(BaseRepository):
         add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(add_stmt)
         model = result.scalars().one()
-        return self.schema.model_validate(model, from_attributes=True)
+        return UserDataMapper.map_to_domain_entity(model)

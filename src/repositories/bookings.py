@@ -2,13 +2,14 @@ from datetime import date
 
 from sqlalchemy import select, exists, and_
 
+from repositories.mappers.mappers import BookingDataMapper
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
 from src.schemas.bookings import Booking
 
 class BookingsRepository(BaseRepository):
     model = BookingsOrm
-    schema = Booking
+    mapper = BookingDataMapper
 
     async def has_overlap(self, hotel_id: int, room_id: int, date_from: date, date_to:date) -> bool:
         query = select(

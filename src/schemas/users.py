@@ -31,5 +31,6 @@ class User(BaseModel):
     nikname: str
     phone: str
     email: EmailStr
+    hashed_password: str
 
     model_config = ConfigDict(from_attributes=True)

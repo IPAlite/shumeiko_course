@@ -21,7 +21,7 @@ async def get_all_rooms(hotel_id: int,
 
 @router.get("/{hotel_id}/rooms/{room_id}", summary='Получение конретного номера')
 async def get_definite_room(hotel_id:int, room_id: int, db: DBDep):
-    result = await db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
+    result = await db.rooms.get_one_or_none_with_rels(id=room_id, hotel_id=hotel_id)
     if result is None:
         raise HTTPException(status_code=404, detail='Такой комнаты не существует')
     return result
