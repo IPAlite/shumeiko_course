@@ -28,17 +28,17 @@ async def setup_database(check_test_mode):
 
 @pytest.fixture(scope='session', autouse=True)
 async def replenishment_of_the_database(setup_database):
+    with open('tests/mock_hotels.json', 'r', encoding='utf-8') as file_hotels:
+        hotels_data = json.load(file_hotels)
+    with open('tests/mock_rooms.json', 'r', encoding='utf-8') as file_rooms:
+        rooms_data = json.load(file_rooms)
+
+    holels = [HotelAdd.model_validate(hotel) for hotel in hotels_data]
+    rooms = [RoomAdd.model_validate(room) for room in rooms_data]
+
     async with DBmanager(session_factory=async_session_maker_null_pool) as db:
-        with open('tests/mock_hotels.json', 'r', encoding='utf-8') as hotels_data:
-            for hotel in json.loads(hotels_data.read()):
-                hotel_data = HotelAdd(**hotel)
-                await db.hotels.add(hotel_data)
-
-        with open('tests/mock_rooms.json', 'r', encoding='utf-8') as rooms_data:
-            for room in json.loads(rooms_data.read()):
-                room_data = RoomAdd(**room)
-                await db.rooms.add(room_data)
-
+        await db.hotels.add_bulk(holels)
+        await db.rooms.add_bulk(rooms)
         await db.commit()
 
 
