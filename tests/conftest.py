@@ -19,6 +19,12 @@ def check_test_mode():
     assert settings.MODE == "TEST"
 
 
+@pytest.fixture(scope='function')
+async def db() -> DBmanager:
+    async with DBmanager(session_factory=async_session_maker_null_pool) as db:
+        yield db
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database(check_test_mode):
     async with engine_null_pool.begin() as conn:
@@ -36,24 +42,29 @@ async def replenishment_of_the_database(setup_database):
     holels = [HotelAdd.model_validate(hotel) for hotel in hotels_data]
     rooms = [RoomAdd.model_validate(room) for room in rooms_data]
 
-    async with DBmanager(session_factory=async_session_maker_null_pool) as db:
-        await db.hotels.add_bulk(holels)
-        await db.rooms.add_bulk(rooms)
-        await db.commit()
+    async with DBmanager(session_factory=async_session_maker_null_pool) as db_:
+        await db_.hotels.add_bulk(holels)
+        await db_.rooms.add_bulk(rooms)
+        await db_.commit()
+
+
+@pytest.fixture(scope="session")
+async def ac() -> AsyncClient:
+     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def register_user(setup_database):
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test") as ac:
-        await ac.post(
-            "/auth/register",
-            json={
-                "first_name": "Гусь",
-                "last_name": "Уткович",
-                "nikname": "AlonMneVlom",
-                "phone": "8800553535",
-                "email": "user@example.com",
-                "password": "string"
-                }   
-            )
+async def register_user(setup_database, ac):
+    await ac.post(
+        "/auth/register",
+        json={
+            "first_name": "Гусь",
+            "last_name": "Уткович",
+            "nikname": "AlonMneVlom",
+            "phone": "8800553535",
+            "email": "user@example.com",
+            "password": "string"
+            }   
+        )
+        
