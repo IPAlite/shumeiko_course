@@ -1,15 +1,16 @@
 from datetime import date
 
 from fastapi import Query, Body, APIRouter
+from fastapi_cache.decorator import cache
 
-from schemas.hotels import Hotel, HotelAdd,  HotelPatch
+from schemas.hotels import HotelAdd,  HotelPatch
 from src.api.dependencies import PaginationDep, DBDep
-from src.database import async_session_maker
 
 router = APIRouter(prefix='/hotels', tags=['Отели'])
 
 
 @router.get('', summary='Получение информации об отелях')
+@cache(expire=10)
 async def get_hotels(
     pagination: PaginationDep,
     db: DBDep,
@@ -31,6 +32,7 @@ async def get_hotels(
 
 
 @router.get('/{hotel_id}', summary='Получение информации об отеле по id')
+@cache(expire=10)
 async def get_hotel_by_id(hotel_id: int, db: DBDep):
     return await db.hotels.get_one_or_none(id=hotel_id)
 

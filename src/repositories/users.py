@@ -4,7 +4,7 @@ from sqlalchemy import select, insert
 
 from pydantic import BaseModel
 
-from repositories.mappers.mappers import UserDataMapper
+from src.repositories.mappers.mappers import UserDataMapper
 from src.repositories.base import BaseRepository
 from src.models.users import UserOrm
 from src.schemas.users import User
