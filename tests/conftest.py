@@ -1,11 +1,11 @@
 import json
+from unittest import mock
+
+mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs:lambda f: f).start()
 
 import pytest
 
 from httpx import AsyncClient, ASGITransport
-
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
 
 from src.config import settings
 from src.database import Base, engine_null_pool
@@ -21,13 +21,6 @@ from src.main import app
 @pytest.fixture(scope="session", autouse=True)
 def check_test_mode():
     assert settings.MODE == "TEST"
-
-
-@pytest.fixture(autouse=True, scope="session")
-def setup_cache():
-    FastAPICache.init(InMemoryBackend(), prefix="test-cache")
-    yield
-    FastAPICache.clear()
 
 
 async def get_db_null_pool():
@@ -87,3 +80,19 @@ async def register_user(setup_database, ac):
             }   
         )
         
+
+@pytest.fixture(scope='session', autouse=True)
+async def authenticated_ac(register_user, ac):
+    response = await ac.post(
+        "/auth/login",
+        json={
+            "email": "user@example.com",
+            "password": "string"
+        }
+    )
+    assert response.status_code == 200
+    assert ac.cookies
+    yield ac
+
+
+    
