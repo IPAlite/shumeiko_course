@@ -51,15 +51,13 @@ class BookingsRepository(BaseRepository):
                 RoomsOrm.hotel_id == data.hotel_id
             ) 
         )
-        result = await self.session.execute(query)
+        rooms_ids_for_book_res = await self.session.execute(query)
+        rooms_ids_for_book: list[int] = rooms_ids_for_book_res.scalars().all()
 
-        is_available = any(room.id == data.room_id for room in result.scalars().all())
+        if data.room_id in [room.id for room in rooms_ids_for_book]:
+            return await self.add(data)
+        
+        else:
+            raise HTTPException(status_code=409, detail='Комната забронирована на данные даты')
 
-        if not is_available:
-            raise HTTPException(status_code=409, detail='Комната занята на указнные даты')
-
-        insert_stmt = insert(BookingsOrm).values(**data.model_dump()).returning(self.model)
-        res = await self.session.execute(insert_stmt)
-        model = res.scalars().one()
-        return self.mapper.map_to_domain_entity(model)
         
