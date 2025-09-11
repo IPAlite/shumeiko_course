@@ -1,10 +1,13 @@
 import pytest
 
+from tests.conftest import get_db_null_pool
 
-@pytest.fixture(scope='function')
-async def db_clear(db):
-    await db.bookings.delete_all()
-    await db.commit()
+
+@pytest.fixture(scope='module')
+async def db_clear():
+    async for _db in get_db_null_pool():
+        await _db.bookings.delete_all()
+        await _db.commit()
 
 
 @pytest.mark.parametrize("hotel_id, room_id, date_from, date_to, status_code", [
@@ -33,24 +36,21 @@ async def test_add_booking(authenticated_ac, hotel_id, room_id, date_from, date_
 
 
 
-@pytest.mark.parametrize("num_of_booking", [1, 2, 3])
-async def test_add_and_get_my_booking(authenticated_ac, db_clear, num_of_booking, db):
-    room = (await db.rooms.get_all())[0]
-    for i in range(num_of_booking):
-        date_from = f"2025-08-{i+1:02d}"
-        date_to = f"2025-08-{i+5:02d}" 
-
-        booking_resp = await authenticated_ac.post(
-            f"/bookings/{room.hotel_id}/{room.id}",
-            json={
-                "date_from": date_from,
-                "date_to": date_to
-            }
-        )
-        assert booking_resp.status_code == 200
-
-    response = await authenticated_ac.get("/bookings/me")
-    bookings = response.json()
-
+@pytest.mark.parametrize("hotel_id, room_id, date_from, date_to, booked_rooms", [
+    (1, 1, "2025-08-01", "2025-08-10", 1),
+    (1, 1, "2025-08-01", "2025-08-10", 2),
+    (1, 1, "2025-08-01", "2025-08-10", 3),
+])
+async def test_add_and_get_my_booking(hotel_id, room_id, date_from, date_to, booked_rooms, db_clear, authenticated_ac):
+    response = await authenticated_ac.post(
+        f"/bookings/{hotel_id}/{room_id}",
+        json={
+            "date_from": date_from,
+            "date_to": date_to
+        }
+    )
     assert response.status_code == 200
-    assert len(bookings) == num_of_booking
+    
+    response_my_bookings = await authenticated_ac.get('/bookings/me')
+    assert response_my_bookings.status_code == 200
+    assert len(response_my_bookings.json()) == booked_rooms
