@@ -77,3 +77,8 @@ class BaseRepository:
             raise HTTPException(status_code=400, detail="More than one object found")
         delete_stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_stmt)
+
+
+    async def delete_all(self) -> None:
+        delete_stmt = delete(self.model)
+        await self.session.execute(delete_stmt)
