@@ -1,11 +1,18 @@
 from datetime import date
 
-from sqlalchemy import select, exists, and_
+from fastapi import HTTPException
+
+from sqlalchemy import insert, select, exists, and_
+from sqlalchemy.orm import selectinload, joinedload
 
 from src.repositories.mappers.mappers import BookingDataMapper
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
-from src.schemas.bookings import Booking
+from src.models.hotels import HotelsOrm
+from src.models.rooms import RoomsOrm
+from src.schemas.bookings import Booking, BookindAdd
+from src.repositories.utils import rooms_ids_for_booking
+
 
 class BookingsRepository(BaseRepository):
     model = BookingsOrm
@@ -33,3 +40,26 @@ class BookingsRepository(BaseRepository):
         )
         res = await self.session.execute(query)
         return [self.mapper.map_to_domain_entity(booking) for booking in res.scalars().all()]
+    
+
+    async def add_booking(self, data: BookindAdd):
+        rooms_ids_for_get = rooms_ids_for_booking(hotel_id=data.hotel_id, date_from=data.date_from, date_to=data.date_to)
+        query = (
+            select(RoomsOrm)
+            .filter(
+                RoomsOrm.id.in_(rooms_ids_for_get),
+                RoomsOrm.hotel_id == data.hotel_id
+            ) 
+        )
+        result = await self.session.execute(query)
+
+        is_available = any(room.id == data.room_id for room in result.scalars().all())
+
+        if not is_available:
+            raise HTTPException(status_code=409, detail='Комната занята на указнные даты')
+
+        insert_stmt = insert(BookingsOrm).values(**data.model_dump()).returning(self.model)
+        res = await self.session.execute(insert_stmt)
+        model = res.scalars().one()
+        return self.mapper.map_to_domain_entity(model)
+        
