@@ -1,4 +1,3 @@
-from src.database import async_session_maker_null_pool
 from src.schemas.hotels import HotelAdd
 
 async def test_add_hotel(db):

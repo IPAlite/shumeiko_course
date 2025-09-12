@@ -2,15 +2,13 @@ from datetime import date
 
 from fastapi import HTTPException
 
-from sqlalchemy import insert, select, exists, and_
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import select, exists, and_
 
 from src.repositories.mappers.mappers import BookingDataMapper
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
-from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
-from src.schemas.bookings import Booking, BookindAdd
+from src.schemas.bookings import BookindAdd
 from src.repositories.utils import rooms_ids_for_booking
 
 

@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.parametrize("first_name, last_name, nikname, phone, email, password", [
     ("Гусь", "Уткович", "AlonMneVlom", "8800553535", "user1@example.com", "string")
 ])
-async def test_auth_funcs(ac, first_name, last_name, nikname, phone, email, password):
+async def test_auth_funcs(first_name, last_name, nikname, phone, email, password, ac):
     # register
     reg_response = await ac.post(
         "/auth/register",

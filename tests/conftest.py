@@ -1,3 +1,4 @@
+# ruff: noqa
 import json
 from unittest import mock
 
@@ -83,7 +84,7 @@ async def register_user(setup_database, ac):
 
 @pytest.fixture(scope='session')
 async def authenticated_ac(register_user, ac) -> AsyncClient:
-    response = await ac.post(
+    await ac.post(
         "/auth/login",
         json={
             "email": "user@example.com",

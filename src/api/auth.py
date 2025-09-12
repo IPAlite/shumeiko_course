@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response,  Body
 
-from src.config import settings
 from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
-from src.database import async_session_maker
 from src.services.auth import AuthService
 from src.api.dependencies import UserIdDep, DBDep
 

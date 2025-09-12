@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from src.repositories.mappers.mappers import UserDataMapper
 from src.repositories.base import BaseRepository
 from src.models.users import UserOrm
-from src.schemas.users import User
 
 
 class UserRepository(BaseRepository):

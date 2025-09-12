@@ -4,8 +4,7 @@ from fastapi import APIRouter, HTTPException, Body, Query
 from fastapi_cache.decorator import cache
 
 from src.schemas.rooms import RoomAddRequest, RoomAdd, RoomPatchRequest, RoomPatch
-from src.schemas.facilities import RoomFacilityAdd, RoomFacilityPatch
-from src.database import async_session_maker
+from src.schemas.facilities import RoomFacilityAdd
 from src.api.dependencies import DBDep
 
 router = APIRouter(prefix='/hotels', tags=['Номера'])

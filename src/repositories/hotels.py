@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from src.repositories.mappers.base import DataMapper
 from src.repositories.mappers.mappers import HotelDataMapper

@@ -1,6 +1,5 @@
 from datetime import date
 
-from src.database import async_session_maker_null_pool
 from src.schemas.bookings import BookindAdd, BookingPatch
 
 async def test_booking_crud(db):
