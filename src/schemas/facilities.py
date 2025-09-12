@@ -1,7 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 
+
 class FacilitiesAdd(BaseModel):
     title: str
+
 
 class Facility(FacilitiesAdd):
     id: int
@@ -23,5 +25,3 @@ class RoomFacility(RoomFacilityAdd):
 class RoomFacilityPatch(BaseModel):
     room_id: int
     facility_id: int | None = None
-
-

@@ -2,6 +2,7 @@ from datetime import date
 
 from src.schemas.bookings import BookindAdd, BookingPatch
 
+
 async def test_booking_crud(db):
     # create
     user_id = (await db.users.get_all())[0].id
@@ -9,12 +10,12 @@ async def test_booking_crud(db):
     room_id = (await db.rooms.get_all())[0].id
 
     booking_data = BookindAdd(
-        user_id = user_id,
-        hotel_id = hotel_id,
-        room_id = room_id,
-        date_from = date(year=2025, month=9, day=1),
-        date_to = date(year=2025, month=9, day=5),
-        price = 500
+        user_id=user_id,
+        hotel_id=hotel_id,
+        room_id=room_id,
+        date_from=date(year=2025, month=9, day=1),
+        date_to=date(year=2025, month=9, day=5),
+        price=500,
     )
     new_booking = await db.bookings.add(booking_data)
 
@@ -26,9 +27,7 @@ async def test_booking_crud(db):
     assert booking.user_id == new_booking.user_id
 
     # update
-    booking_data = BookingPatch(
-        price=15000
-    )
+    booking_data = BookingPatch(price=15000)
     await db.bookings.edit(booking_data, id=booking.id, exclude_unset=True)
     updated_booking = await db.bookings.get_one_or_none(id=booking.id)
     assert updated_booking

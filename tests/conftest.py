@@ -2,7 +2,7 @@
 import json
 from unittest import mock
 
-mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs:lambda f: f).start()
+mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 import pytest
 
@@ -29,7 +29,7 @@ async def get_db_null_pool():
         yield db
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 async def db() -> DBmanager:
     async for db in get_db_null_pool():
         yield db
@@ -45,11 +45,11 @@ async def setup_database(check_test_mode):
         await conn.run_sync(Base.metadata.create_all)
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 async def replenishment_of_the_database(setup_database):
-    with open('tests/mock_hotels.json', 'r', encoding='utf-8') as file_hotels:
+    with open("tests/mock_hotels.json", "r", encoding="utf-8") as file_hotels:
         hotels_data = json.load(file_hotels)
-    with open('tests/mock_rooms.json', 'r', encoding='utf-8') as file_rooms:
+    with open("tests/mock_rooms.json", "r", encoding="utf-8") as file_rooms:
         rooms_data = json.load(file_rooms)
 
     holels = [HotelAdd.model_validate(hotel) for hotel in hotels_data]
@@ -63,7 +63,7 @@ async def replenishment_of_the_database(setup_database):
 
 @pytest.fixture(scope="session")
 async def ac() -> AsyncClient:
-     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
@@ -77,22 +77,13 @@ async def register_user(setup_database, ac):
             "nikname": "AlonMneVlom",
             "phone": "8800553535",
             "email": "user@example.com",
-            "password": "string"
-            }   
-        )
-        
-
-@pytest.fixture(scope='session')
-async def authenticated_ac(register_user, ac) -> AsyncClient:
-    await ac.post(
-        "/auth/login",
-        json={
-            "email": "user@example.com",
-            "password": "string"
-        }
+            "password": "string",
+        },
     )
-    assert ac.cookies['access_token']
+
+
+@pytest.fixture(scope="session")
+async def authenticated_ac(register_user, ac) -> AsyncClient:
+    await ac.post("/auth/login", json={"email": "user@example.com", "password": "string"})
+    assert ac.cookies["access_token"]
     yield ac
-
-
-    

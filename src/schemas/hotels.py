@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
+
 class HotelAdd(BaseModel):
     title: str
     location: str

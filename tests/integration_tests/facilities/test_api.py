@@ -1,11 +1,6 @@
 async def test_add_facilities(ac):
     facility_title = "СПА"
-    response = await ac.post(
-        "/facilities",
-        json={
-            "title": facility_title
-        }
-    )
+    response = await ac.post("/facilities", json={"title": facility_title})
     res = response.json()
     assert isinstance(res, dict)
     assert res["data"]["title"] == facility_title

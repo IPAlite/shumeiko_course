@@ -7,16 +7,17 @@ from src.tasks.celery_app import celery_instance
 from src.database import async_session_maker_null_pool
 from src.utils.db_manager import DBmanager
 
+
 @celery_instance.task
 def test_task():
     sleep(5)
-    print('я закончил')
+    print("я закончил")
 
 
 @celery_instance.task
 def resize_image(image_path: str):
     sizes = [1000, 500, 200]
-    output_folder = 'src/static/images'
+    output_folder = "src/static/images"
 
     img = Image.open(image_path)
 
@@ -24,7 +25,9 @@ def resize_image(image_path: str):
     name, ext = os.path.splitext(base_name)
 
     for size in sizes:
-        img_resized = img.resize((size, int(img.height * (size / img.width))), Image.Resampling.LANCZOS)
+        img_resized = img.resize(
+            (size, int(img.height * (size / img.width))), Image.Resampling.LANCZOS
+        )
 
         new_file_name = f"{name}_{size}px{ext}"
 
@@ -36,7 +39,7 @@ def resize_image(image_path: str):
 
 
 async def get_bookings_with_today_chekin_helper():
-    print('я запускаюсь')
+    print("я запускаюсь")
     async with DBmanager(session_factory=async_session_maker_null_pool) as db:
         boookings = await db.bookings.get_bookings_with_today_checkin()
         print(boookings)

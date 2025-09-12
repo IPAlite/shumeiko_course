@@ -19,8 +19,8 @@ class UserRepository(BaseRepository):
         model = result.scalars().one_or_none()
 
         if model:
-            raise HTTPException(status_code=409, detail='Пользователь с таким email существует!')
-        
+            raise HTTPException(status_code=409, detail="Пользователь с таким email существует!")
+
         add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(add_stmt)
         model = result.scalars().one()
