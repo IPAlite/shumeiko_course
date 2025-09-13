@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Body, Query
 from fastapi_cache.decorator import cache
 
+from src.exceptions import DateErrorException, ObjectNotFoundException
 from src.schemas.rooms import RoomAddRequest, RoomAdd, RoomPatchRequest, RoomPatch
 from src.schemas.facilities import RoomFacilityAdd
 from src.api.dependencies import DBDep
@@ -17,29 +18,36 @@ async def get_all_rooms(
     db: DBDep,
     date_from: date = Query(example="2025-08-01"),
     date_to: date = Query(example="2025-08-10"),
-):
-    return await db.rooms.get_filtered_by_time(
-        hotel_id=hotel_id, date_from=date_from, date_to=date_to
-    )
+):  
+    try:
+        room_resp =  await db.rooms.get_filtered_by_time(
+            hotel_id=hotel_id, date_from=date_from, date_to=date_to
+        )
+    except DateErrorException as ex:
+        raise HTTPException(status_code=400, detail=ex.detail)
+
+    return {"status": "ok", "data": room_resp}
 
 
 @router.get("/{hotel_id}/rooms/{room_id}", summary="Получение конретного номера")
 @cache(expire=10)
 async def get_definite_room(hotel_id: int, room_id: int, db: DBDep):
-    result = await db.rooms.get_one_or_none_with_rels(id=room_id, hotel_id=hotel_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail="Такой комнаты не существует")
+    try:
+        result = await db.rooms.get_one_or_none_with_rels(id=room_id, hotel_id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail="Такого номера не существует")
     return result
 
 
 @router.post("/{hotel_id}/rooms", summary="Добавление номеров")
 async def add_new_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Body()):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail='Отеля не существует')
+    
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     room = await db.rooms.add(_room_data)
-
-    hotel = await db.hotels.get_one_or_none(id=hotel_id)
-    if hotel is None:
-        raise HTTPException(status_code=404, detail="Отель отсуствует в базе")
 
     rooms_facilities_data = [
         RoomFacilityAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids
@@ -52,6 +60,11 @@ async def add_new_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Bod
 
 @router.put("{hotel_id}/rooms/{room_id}", summary="Полное обновление информации о номере")
 async def room_rewrite(hotel_id: int, room_id: int, room_data: RoomAddRequest, db: DBDep):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail='Отеля не существует')
+    
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(id=room_id, data=_room_data)
     await db.rooms_facilities.set_room_facilities(
@@ -63,6 +76,11 @@ async def room_rewrite(hotel_id: int, room_id: int, room_data: RoomAddRequest, d
 
 @router.patch("{hotel_id}/rooms/{room_id}", summary="Частичное обновление информации о номере")
 async def room_change(hotel_id: int, room_id: int, room_data: RoomPatchRequest, db: DBDep):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail='Отеля не существует')
+    
     _room_data_dict = room_data.model_dump(exclude_unset=True)
     _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
     await db.rooms.edit(id=room_id, hotel_id=hotel_id, data=_room_data, exclude_unset=True)
@@ -78,6 +96,9 @@ async def room_change(hotel_id: int, room_id: int, room_data: RoomPatchRequest, 
 
 @router.delete("/{hotel_id}/rooms/{room_id}", summary="Удаление комнаты")
 async def room_delete(hotel_id: int, room_id: int, db: DBDep):
-    await db.rooms.delete(hotel_id=hotel_id, id=room_id)
+    try:
+        await db.rooms.delete(hotel_id=hotel_id, id=room_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail='Отеля не существует')
     await db.commit()
     return {"status": "ok"}

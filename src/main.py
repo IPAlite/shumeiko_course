@@ -1,7 +1,11 @@
 from contextlib import asynccontextmanager
 
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError
 from fastapi import FastAPI
+from fastapi import HTTPException
 import uvicorn
+import asyncpg
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
@@ -37,6 +41,23 @@ app.include_router(router_rooms)
 app.include_router(router_facilities)
 app.include_router(router_bookings)
 app.include_router(router_images)
+
+@app.exception_handler(DBAPIError)
+async def sqlalchemy_exception_handler(request, exc: DBAPIError):
+    if isinstance(exc.orig, asyncpg.exceptions.DataError):
+        detail = f"Database error: {exc.orig}"
+    else:
+        detail = f"SQLAlchemy error: {exc}"
+    
+    print(f"SQL: {exc.statement}")
+    print(f"Parameters: {exc.params}")
+    print(f"Error: {exc.orig}")
+    
+    return JSONResponse(
+        status_code=400,
+        content={"detail": detail}
+    )
+
 
 if __name__ == "__main__":
     uvicorn.run("src.main:app", reload=True)

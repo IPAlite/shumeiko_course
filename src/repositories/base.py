@@ -1,9 +1,15 @@
+from typing import Sequence
+
 from fastapi import HTTPException
 
+from asyncpg.exceptions import ForeignKeyViolationError
+
 from sqlalchemy import select, insert, update, delete
+from sqlalchemy.exc import NoResultFound
 
 from pydantic import BaseModel
 
+from src.exceptions import ObjectNotFoundException
 from src.repositories.mappers.base import DataMapper
 
 
@@ -13,8 +19,6 @@ class BaseRepository:
 
     def __init__(self, session):
         self.session = session
-        # self.model: BaseModel
-        # self.mapper: DataMapper
 
     async def get_filtered(self, *filter, **filter_by):
         query = select(self.model).filter(*filter).filter_by(**filter_by)
@@ -24,12 +28,26 @@ class BaseRepository:
     async def get_all(self, *args, **kwargs):
         return await self.get_filtered()
 
-    async def get_one_or_none(self, **filter_by):
+    async def get_one_or_none(self, **filter_by) -> BaseModel | None:
         query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         model = result.scalars().one_or_none()
         if model is None:
             return None
+        return self.mapper.map_to_domain_entity(model)
+    
+    async def get_one(self, **filter_by) -> BaseModel:
+        query = select(self.model).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        try:
+            model = result.scalar_one()
+        
+        except NoResultFound:
+            raise ObjectNotFoundException
+        
+        except ForeignKeyViolationError:
+            raise ObjectNotFoundException
+
         return self.mapper.map_to_domain_entity(model)
 
     async def add(self, data: BaseModel):
@@ -38,7 +56,7 @@ class BaseRepository:
         model = result.scalars().one()
         return self.mapper.map_to_domain_entity(model)
 
-    async def add_bulk(self, data: list[BaseModel]):
+    async def add_bulk(self, data: Sequence[BaseModel]):
         if not data:
             return []
         add_obj_stmt = (
@@ -50,7 +68,7 @@ class BaseRepository:
         checker = await self.session.execute(select(self.model).filter_by(**filter_by))
         rows = checker.scalars().all()
         if not rows:
-            raise HTTPException(status_code=404, detail="Object not found")
+            raise ObjectNotFoundException
         if len(rows) > 1:
             raise HTTPException(status_code=400, detail="More than one object found")
         edit_stmt = (
@@ -64,7 +82,7 @@ class BaseRepository:
         checker = await self.session.execute(select(self.model).filter_by(**filter_by))
         rows = checker.scalars().all()
         if not rows:
-            raise HTTPException(status_code=404, detail="Object not found")
+            raise ObjectNotFoundException
         if len(rows) > 1:
             raise HTTPException(status_code=400, detail="More than one object found")
         delete_stmt = delete(self.model).filter_by(**filter_by)

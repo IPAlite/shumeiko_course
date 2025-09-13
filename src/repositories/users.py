@@ -1,9 +1,8 @@
-from fastapi import HTTPException
-
 from sqlalchemy import select, insert
 
 from pydantic import BaseModel
 
+from src.exceptions import UserAlredyExistsException
 from src.repositories.mappers.mappers import UserDataMapper
 from src.repositories.base import BaseRepository
 from src.models.users import UserOrm
@@ -19,7 +18,7 @@ class UserRepository(BaseRepository):
         model = result.scalars().one_or_none()
 
         if model:
-            raise HTTPException(status_code=409, detail="Пользователь с таким email существует!")
+            raise UserAlredyExistsException
 
         add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(add_stmt)

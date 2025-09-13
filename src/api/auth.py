@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response, Body
 
+from src.exceptions import UserAlredyExistsException
 from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
 from src.services.auth import AuthService
 from src.api.dependencies import UserIdDep, DBDep
@@ -41,9 +42,11 @@ async def user_registet(
         email=data.email,
         hashed_password=hashed_password,
     )
-    await db.users.add(new_user_data)
+    try:
+        await db.users.add(new_user_data)
+    except UserAlredyExistsException as ex:
+        raise HTTPException(status_code=422, detail=ex.detail)
     await db.commit()
-
     return {"status": "ok"}
 
 

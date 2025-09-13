@@ -1,9 +1,8 @@
 from datetime import date
 
-from fastapi import HTTPException
-
 from sqlalchemy import select, exists, and_
 
+from src.exceptions import AllRoomsAreBookedException
 from src.repositories.mappers.mappers import BookingDataMapper
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
@@ -50,5 +49,4 @@ class BookingsRepository(BaseRepository):
         if data.room_id in [room.id for room in rooms_ids_for_book]:
             return await self.add(data)
 
-        else:
-            raise HTTPException(status_code=409, detail="Комната забронирована на данные даты")
+        raise AllRoomsAreBookedException
