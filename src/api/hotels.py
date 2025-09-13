@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import Query, Body, APIRouter, HTTPException
 from fastapi_cache.decorator import cache
 
-from src.exceptions import DateErrorException, ObjectNotFoundException
+from src.exceptions import DateErrorException, HotelNotFoundHTTPException, ObjectNotFoundException
 from schemas.hotels import HotelAdd, HotelPatch
 from src.api.dependencies import PaginationDep, DBDep
 
@@ -20,6 +20,7 @@ async def get_hotels(
     date_from: date = Query(example="2025-08-01"),
     date_to: date = Query(example="2025-08-10"),
 ):
+
     per_page = pagination.per_page or 5
     try:
         hotel_resp = await db.hotels.get_filtered_by_time(
@@ -42,7 +43,7 @@ async def get_hotel_by_id(hotel_id: int, db: DBDep):
     try:
         hotel_resp = await db.hotels.get_one(id=hotel_id)
     except ObjectNotFoundException:
-        raise HTTPException(status_code=404, detail='Отеля не существует')
+        raise HotelNotFoundHTTPException
     
     return {"status": "ok", "data": hotel_resp}
 

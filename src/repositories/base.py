@@ -1,15 +1,15 @@
 from typing import Sequence
 
-from fastapi import HTTPException
+from fastapi import HTTPException 
 
-from asyncpg.exceptions import ForeignKeyViolationError
+from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 
 from sqlalchemy import select, insert, update, delete
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 
 from pydantic import BaseModel
 
-from src.exceptions import ObjectNotFoundException
+from src.exceptions import ObjectAlredyExistsException, ObjectNotFoundException
 from src.repositories.mappers.base import DataMapper
 
 
@@ -51,10 +51,16 @@ class BaseRepository:
         return self.mapper.map_to_domain_entity(model)
 
     async def add(self, data: BaseModel):
-        add_obj_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
-        result = await self.session.execute(add_obj_stmt)
-        model = result.scalars().one()
-        return self.mapper.map_to_domain_entity(model)
+        try:
+            add_obj_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
+            result = await self.session.execute(add_obj_stmt)
+            model = result.scalars().one()
+            return self.mapper.map_to_domain_entity(model)
+        except IntegrityError as ex:
+            if isinstance(ex.orig.__cause__, UniqueViolationError):
+                raise ObjectAlredyExistsException from ex
+            else:
+                raise ex
 
     async def add_bulk(self, data: Sequence[BaseModel]):
         if not data:

@@ -34,9 +34,6 @@ class HotelsRepository(BaseRepository):
             .filter(RoomsOrm.id.in_(rooms_ids_to_get))
         )
 
-        if date_from >= date_to:
-            raise DateErrorException
-
         query = select(HotelsOrm).filter(HotelsOrm.id.in_(hotels_ids_to_get))
         if location:
             query = query.filter(HotelsOrm.location.ilike(f"%{location}%"))
