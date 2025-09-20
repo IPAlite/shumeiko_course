@@ -7,13 +7,19 @@ class BronkaException(Exception):
     def __init__(self, *args, **kwargs):
         super().__init__(self.detail, *args, **kwargs)
 
+
 # general
 class ObjectNotFoundException(BronkaException):
     detail = "Объект не найден"
 
 
+class SeveralIdenticalObjects(BaseException):
+    detail = "Существует несколько похожих объектов"
+
+
 class DateErrorException(BronkaException):
     detail = "Дата выезда должна быть позже даты заезда"
+
 
 # auth
 class ObjectAlredyExistsException(BronkaException):
@@ -35,9 +41,9 @@ class BronkaHTTPException(HTTPException):
 
 class HotelNotFoundHTTPException(BronkaHTTPException):
     staus_code = 404
-    detail = 'Отель не найден'
+    detail = "Отель не найден"
 
 
 class RoomNotFoundHTTPException(BronkaHTTPException):
     staus_code = 404
-    detail = 'Номер не найден'
+    detail = "Номер не найден"

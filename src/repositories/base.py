@@ -1,6 +1,7 @@
 from typing import Sequence
+import logging
 
-from fastapi import HTTPException 
+from fastapi import HTTPException
 
 from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 
@@ -9,7 +10,11 @@ from sqlalchemy.exc import NoResultFound, IntegrityError
 
 from pydantic import BaseModel
 
-from src.exceptions import ObjectAlredyExistsException, ObjectNotFoundException
+from src.exceptions import (
+    ObjectAlredyExistsException,
+    ObjectNotFoundException,
+    SeveralIdenticalObjects,
+)
 from src.repositories.mappers.base import DataMapper
 
 
@@ -35,16 +40,16 @@ class BaseRepository:
         if model is None:
             return None
         return self.mapper.map_to_domain_entity(model)
-    
+
     async def get_one(self, **filter_by) -> BaseModel:
         query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         try:
             model = result.scalar_one()
-        
+
         except NoResultFound:
             raise ObjectNotFoundException
-        
+
         except ForeignKeyViolationError:
             raise ObjectNotFoundException
 
@@ -57,9 +62,15 @@ class BaseRepository:
             model = result.scalars().one()
             return self.mapper.map_to_domain_entity(model)
         except IntegrityError as ex:
+            logging.error(
+                f"Не удалось добавить данные в бд, входные данные={data} тип ошибки:{type(ex.orig.__cause__)=}"
+            )
             if isinstance(ex.orig.__cause__, UniqueViolationError):
                 raise ObjectAlredyExistsException from ex
             else:
+                logging.error(
+                    f"Незнакомая ошибка: Не удалось добавить данные в бд, входные данные={data} тип ошибки:{type(ex.orig.__cause__)=}"
+                )
                 raise ex
 
     async def add_bulk(self, data: Sequence[BaseModel]):
@@ -90,7 +101,7 @@ class BaseRepository:
         if not rows:
             raise ObjectNotFoundException
         if len(rows) > 1:
-            raise HTTPException(status_code=400, detail="More than one object found")
+            raise SeveralIdenticalObjects
         delete_stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_stmt)
 

@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "first_name, last_name, nikname, phone, email, password",
-    [("Гусь", "Уткович", "AlonMneVlom", "8800553535", "user1@example.com", "string")],
+    [("Гусь", "Уткович", "AlonMneVlom", "8800553535", "user23@example.com", "string")],
 )
 async def test_auth_funcs(first_name, last_name, nikname, phone, email, password, ac):
     # register
@@ -28,10 +28,11 @@ async def test_auth_funcs(first_name, last_name, nikname, phone, email, password
     # me
     me_response = await ac.get("/auth/me")
     a_t = me_response.json()
+
     assert me_response.status_code == 200
-    assert nikname == a_t.get("nikname")
-    assert phone == a_t.get("phone")
-    assert email == a_t.get("email")
+    assert nikname == a_t.get('data').get("nikname")
+    assert phone == a_t.get('data').get("phone")
+    assert email == a_t.get('data').get("email")
 
     # logout
     logout_response = await ac.post("/auth/logout")
@@ -64,7 +65,7 @@ async def test_auth_funcs(first_name, last_name, nikname, phone, email, password
     assert me_response_after_logout.status_code == 401
 
     # user delete with wrong email
-    delete_response = await ac.delete("/auth/delete/wrong_email")
+    delete_response = await ac.delete(f"/auth/delete/wrong_email")
     assert delete_response.status_code == 404
 
     # user delete

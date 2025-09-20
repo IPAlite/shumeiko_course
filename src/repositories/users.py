@@ -17,10 +17,9 @@ class UserRepository(BaseRepository):
 
     # async def add(self, data: BaseModel):
     #     query = select(self.model).where(self.model.email == data.email)
-        
+
     #     result = await self.session.execute(query)
     #     model = result.scalars().one_or_none()
-
 
     #     add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
     #     result = await self.session.execute(add_stmt)

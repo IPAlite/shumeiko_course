@@ -31,7 +31,7 @@ async def get_db_null_pool():
 
 
 @pytest.fixture(scope="function")
-async def db() -> AsyncGenerator[DBmanager]:
+async def db() -> AsyncGenerator[DBmanager, None]:
     async for db in get_db_null_pool():
         yield db
 
@@ -63,7 +63,7 @@ async def replenishment_of_the_database(setup_database):
 
 
 @pytest.fixture(scope="session")
-async def ac() -> AsyncGenerator[AsyncClient]:
+async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
@@ -84,7 +84,7 @@ async def register_user(setup_database, ac):
 
 
 @pytest.fixture(scope="session")
-async def authenticated_ac(register_user, ac) -> AsyncGenerator[AsyncClient]:
+async def authenticated_ac(register_user, ac) -> AsyncGenerator[AsyncClient, None]:
     await ac.post("/auth/login", json={"email": "user@example.com", "password": "string"})
     assert ac.cookies["access_token"]
     yield ac

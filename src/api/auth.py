@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException, Response, Body
+from fastapi import APIRouter, Response, Body
 
-from src.exceptions import ObjectAlredyExistsException
-from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
+from src.schemas.users import UserRequestAdd, UserLogin
 from src.services.auth import AuthService
 from src.api.dependencies import UserIdDep, DBDep
 
@@ -10,8 +9,8 @@ router = APIRouter(prefix="/auth", tags=["Авторизация и аутент
 
 @router.get("/me", summary="Проверка авторизованного пользователя")
 async def get_me(user_id: UserIdDep, db: DBDep):
-    user = await db.users.get_one_or_none(id=user_id)
-    return user
+    user = await AuthService(db).get_me(user_id)
+    return {"status": "ok", "data": user}
 
 
 @router.post("/register", summary="Регистрация пользователя")
@@ -33,34 +32,13 @@ async def user_registet(
         }
     ),
 ):
-    hashed_password = AuthService().hashed_password(password=data.password)
-    new_user_data = UserAdd(
-        first_name=data.first_name,
-        last_name=data.last_name,
-        nikname=data.nikname,
-        phone=data.phone,
-        email=data.email,
-        hashed_password=hashed_password,
-    )
-    try:
-        await db.users.add(new_user_data)
-        await db.commit()
-
-    except ObjectAlredyExistsException:
-        raise HTTPException(status_code=409, detail='Пользователь с такой почтой уже существует')
-
+    await AuthService(db).user_register(data)
     return {"status": "ok"}
 
 
 @router.post("/login", summary="Аутентификация пользователя")
 async def user_login(data: UserLogin, response: Response, db: DBDep):
-    user = await db.users.get_one_or_none(email=data.email)
-    if not user:
-        raise HTTPException(status_code=401, detail="Пользователь с таким email не зарегистрирован")
-    if not AuthService().verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Вы ввели неверный пароль")
-    access_token = AuthService().create_access_token({"user_id": user.id})
-    response.set_cookie("access_token", access_token)
+    access_token = await AuthService(db).user_login(data, response)
     return {"access_token": access_token}
 
 
@@ -72,6 +50,5 @@ async def user_logout(response: Response):
 
 @router.delete("/delete/{user_mail}", summary="Удаление пользователя")
 async def user_delete(user_mail: str, db: DBDep):
-    await db.users.delete(email=user_mail)
-    await db.commit()
+    await AuthService(db).user_delete(user_mail)
     return {"status": "ok"}

@@ -1,11 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from src.exceptions import AllRoomsAreBookedException, ObjectNotFoundException
-from src.schemas.bookings import BookingAddRequest, BookindAdd
+from src.services.bookings import BookingsService
+from src.schemas.bookings import BookingAddRequest
 from src.api.dependencies import DBDep, UserIdDep
-from src.schemas.hotels import Hotel
-from src.schemas.rooms import Room
-
 
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование номеров"])
@@ -13,12 +10,12 @@ router = APIRouter(prefix="/bookings", tags=["Бронирование номе�
 
 @router.get("", summary="Получение всех бронирований")
 async def get_all_bookings(db: DBDep):
-    return await db.bookings.get_all()
+    return await BookingsService(db).get_all_bookings()
 
 
 @router.get("/me", summary="Получение бронирований пользователя")
 async def get_user_bookings(user_id: UserIdDep, db: DBDep):
-    return await db.bookings.get_filtered(user_id=user_id)
+    return await BookingsService(db).get_user_bookings(user_id)
 
 
 @router.post("/{hotel_id}/{room_id}", summary="Добавление бронирования")
@@ -28,26 +25,6 @@ async def add_booking(
     booking_data: BookingAddRequest,
     db: DBDep,
     user_id: UserIdDep,
-):    
-    try:
-        room: Room = await db.rooms.get_one(id=room_id, hotel_id=hotel_id)
-    except ObjectNotFoundException:
-        raise HTTPException(status_code=404, detail='Номер не найден')
-    
-    days_different = (booking_data.date_to - booking_data.date_from).days
-    room_price: int = room.price * days_different
-
-    booking_data = BookindAdd(
-        user_id=user_id,
-        hotel_id=hotel_id,
-        room_id=room_id,
-        price=room_price,
-        **booking_data.model_dump(),
-    )
-    try:
-        await db.bookings.add_booking(booking_data)
-    except AllRoomsAreBookedException as ex:
-        raise HTTPException(status_code=409, detail=ex.detail)
-    await db.commit()
-
+):
+    booking_data = await BookingsService(db).add_bookings(hotel_id, room_id, booking_data, user_id)
     return {"status": "ok", "booking_data": booking_data}
